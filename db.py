@@ -43,10 +43,3 @@ def get_setting(key, default=None):
 def set_setting(key, value):
     sb = get_supabase()
     sb.table("app_settings").upsert({"key": key, "value": str(value)}, on_conflict="key").execute()
-```
-
-Guarda con **Ctrl+S** y luego:
-```
-git add db.py
-git commit -m "fix db.py indentation"
-git push
