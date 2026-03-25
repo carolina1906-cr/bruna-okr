@@ -17,12 +17,13 @@ def get_key_results(department_code=None):
 
 def get_monthly_values(key_result_id, year):
     sb = get_supabase()
-    res = sb.table("monthly_values")\
-        .select("*")\
-        .eq("key_result_id", key_result_id)\
-        .eq("year", year)\
-        .execute()
-    return {row["month"]: row["value"] for row in res.data}
+    try:
+    res = sb.table("app_settings").select("value").eq("key", key).execute()
+    if res.data:
+        return res.data[0]["value"]
+except Exception:
+    pass
+return default
 
 def upsert_monthly_value(key_result_id, year, month, value, notes=""):
     sb = get_supabase()
@@ -36,9 +37,12 @@ def upsert_monthly_value(key_result_id, year, month, value, notes=""):
 
 def get_setting(key, default=None):
     sb = get_supabase()
-    res = sb.table("app_settings").select("value").eq("key", key).execute()
-    if res.data:
-        return res.data[0]["value"]
+    try:
+        res = sb.table("app_settings").select("value").eq("key", key).execute()
+        if res.data:
+            return res.data[0]["value"]
+    except Exception:
+        pass
     return default
 
 def set_setting(key, value):
