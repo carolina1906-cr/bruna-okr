@@ -17,13 +17,8 @@ def get_key_results(department_code=None):
 
 def get_monthly_values(key_result_id, year):
     sb = get_supabase()
-    try:
-    res = sb.table("app_settings").select("value").eq("key", key).execute()
-    if res.data:
-        return res.data[0]["value"]
-except Exception:
-    pass
-return default
+    res = sb.table("monthly_values").select("*").eq("key_result_id", key_result_id).eq("year", year).execute()
+    return {row["month"]: row["value"] for row in res.data}
 
 def upsert_monthly_value(key_result_id, year, month, value, notes=""):
     sb = get_supabase()
@@ -48,3 +43,10 @@ def get_setting(key, default=None):
 def set_setting(key, value):
     sb = get_supabase()
     sb.table("app_settings").upsert({"key": key, "value": str(value)}, on_conflict="key").execute()
+```
+
+Guarda con **Ctrl+S** y luego:
+```
+git add db.py
+git commit -m "fix db.py indentation"
+git push
