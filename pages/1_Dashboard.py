@@ -45,7 +45,7 @@ for dept in departments:
             dept_pcts.append(pct_m)
             promedios.append(pct_m)
         rows.append({
-            "KR": kr["name"],
+            "KR": f"{kr['name']} ({kr['delta']})",
             "Unidad": kr["unit"],
             "Meta": kr["goal"],
             "% Mes": f"{pct_m:.1f}%" if pct_m is not None else "—",
