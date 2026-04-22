@@ -99,8 +99,7 @@ for dept in departments:
             dept_pcts.append(pct_show)
         kr_list.append((kr, pct_m, pct_a, pct_show, estado))
     prom = round(sum(dept_pcts) / len(dept_pcts), 1) if dept_pcts else None
-    if prom is not None:
-        dept_promedios.append(prom)
+    dept_promedios.append(prom if prom is not None else 0)
     dept_data.append((dept, prom, kr_list))
 
 # Promedio global = promedio de promedios por área
