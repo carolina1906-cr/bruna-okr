@@ -4,7 +4,7 @@ from calculations import calcular_avance, semaforo
 from constants import MESES
 
 st.set_page_config(
-    page_title="OKR Tracker — Bruna Group",
+    page_title="Inicio — OKR Bruna Group",
     page_icon="📊",
     layout="wide"
 )
@@ -12,7 +12,6 @@ st.set_page_config(
 st.markdown("""
 <style>
     .main-title { font-size: 26px; font-weight: 700; color: #1A2744; margin-bottom: 2px; }
-    .main-sub { font-size: 14px; color: #888; margin-bottom: 20px; }
     .summary-card { background: #f8f9fa; border-radius: 10px; padding: 14px 16px; text-align: center; }
     .summary-num { font-size: 28px; font-weight: 700; }
     .summary-label { font-size: 12px; color: #888; margin-top: 2px; }
@@ -30,25 +29,22 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- Estado ---
 if "dept_selected" not in st.session_state:
     st.session_state.dept_selected = None
 
-# --- Configuración mes ---
 mes_activo = int(get_setting("active_month", 1))
 year_activo = int(get_setting("active_year", 2026))
 
-# --- Header ---
 st.markdown('<div class="main-title">📊 OKR Tracker — Bruna Group</div>', unsafe_allow_html=True)
 
 col_mes, col_year, col_modo = st.columns([2, 2, 3])
 with col_mes:
     nuevo_mes = st.selectbox("Mes activo", options=list(range(1, 13)),
-                              format_func=lambda m: MESES[m-1], index=mes_activo-1, key="sel_mes")
+                              format_func=lambda m: MESES[m-1], index=mes_activo-1)
 with col_year:
-    nuevo_year = st.number_input("Año", min_value=2024, max_value=2030, value=year_activo, key="sel_year")
+    nuevo_year = st.number_input("Año", min_value=2024, max_value=2030, value=year_activo)
 with col_modo:
-    modo = st.radio("Ver", ["Mes activo", "Acumulado año"], horizontal=True, key="modo_vista")
+    modo = st.radio("Ver", ["Mes activo", "Acumulado año"], horizontal=True)
 
 if nuevo_mes != mes_activo or nuevo_year != year_activo:
     set_setting("active_month", nuevo_mes)
@@ -60,12 +56,11 @@ if nuevo_mes != mes_activo or nuevo_year != year_activo:
 
 usar_acum = modo == "Acumulado año"
 
-# --- Datos ---
 departments = get_departments()
 all_krs = get_key_results()
 
 total = en_meta = en_riesgo = critico = sin_dato = 0
-promedios = []
+dept_promedios = []
 dept_data = []
 
 PCT_COLOR = {
@@ -102,14 +97,16 @@ for dept in departments:
         else: sin_dato += 1
         if pct_show is not None:
             dept_pcts.append(pct_show)
-            promedios.append(pct_show)
         kr_list.append((kr, pct_m, pct_a, pct_show, estado))
     prom = round(sum(dept_pcts) / len(dept_pcts), 1) if dept_pcts else None
+    if prom is not None:
+        dept_promedios.append(prom)
     dept_data.append((dept, prom, kr_list))
 
-prom_org = round(sum(promedios) / len(promedios), 1) if promedios else None
+# Promedio global = promedio de promedios por área
+prom_org = round(sum(dept_promedios) / len(dept_promedios), 1) if dept_promedios else None
 
-# --- Resumen ejecutivo ---
+# Resumen ejecutivo
 st.markdown('<div class="section-title">Resumen organizacional</div>', unsafe_allow_html=True)
 c1, c2, c3, c4, c5 = st.columns(5)
 color_org = "#2DC653" if prom_org and prom_org >= 70 else "#E63946" if prom_org and prom_org < 40 else "#BA7517" if prom_org else "#999"
@@ -124,7 +121,7 @@ with c4:
 with c5:
     st.markdown(f'<div class="summary-card"><div class="summary-num" style="color:#999;">{sin_dato}</div><div class="summary-label">Sin dato</div></div>', unsafe_allow_html=True)
 
-# --- Menu por area ---
+# Menu por area
 st.markdown('<div class="section-title">Ver por área</div>', unsafe_allow_html=True)
 
 cols = st.columns(2)
@@ -132,7 +129,10 @@ for i, (dept, prom, kr_list) in enumerate(dept_data):
     with cols[i % 2]:
         pct_color = "#2DC653" if prom and prom >= 70 else "#E63946" if prom and prom < 40 else "#BA7517" if prom else "#999"
         pct_txt = f"{prom}%" if prom is not None else "Sin datos"
-        label = f"{dept['name']}  —  {pct_txt}"
+        obj_txt = dept.get("objective", "")
+        if obj_txt and len(obj_txt) > 70:
+            obj_txt = obj_txt[:70] + "..."
+        label = f"**{dept['name']}** — {pct_txt}\n\n*{obj_txt}*"
         if st.button(label, key=f"btn_{dept['code']}", use_container_width=True):
             if st.session_state.dept_selected == dept["code"]:
                 st.session_state.dept_selected = None
@@ -140,7 +140,7 @@ for i, (dept, prom, kr_list) in enumerate(dept_data):
                 st.session_state.dept_selected = dept["code"]
             st.rerun()
 
-# --- Vista detalle por area ---
+# Vista detalle por area
 if st.session_state.dept_selected:
     selected = next((d for d in dept_data if d[0]["code"] == st.session_state.dept_selected), None)
     if selected:
