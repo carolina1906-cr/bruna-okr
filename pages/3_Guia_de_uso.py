@@ -9,8 +9,7 @@ st.divider()
 
 st.header("¿Qué es esta plataforma?")
 st.markdown("""
-El OKR Tracker centraliza el avance de los **36 Resultados Clave (KRs)** de los **8 departamentos** de Bruna Group.
-
+El OKR Tracker centraliza el avance de los **31 Resultados Clave (KRs)** de los **8 departamentos** de Bruna Group.
 Su propósito es simple: que cada líder tenga visibilidad clara de cómo va su área, y que la alta dirección pueda ver el pulso organizacional de un vistazo.
 
 > *No reemplaza la conversación estratégica — la alimenta.*
@@ -39,10 +38,11 @@ with col1:
     """)
 
 with col2:
-    st.subheader("⚙️ Control")
+   st.subheader("📖 Guía de uso")
     st.markdown("""
-    - Permite cambiar el mes activo globalmente
-    - Útil para revisiones históricas
+    - Encuentra aquí toda la información sobre cómo funciona la plataforma
+    - Leyenda del semáforo y tipos de medición
+    - Preguntas frecuentes
     """)
 
     st.subheader("📥 Exportar")
