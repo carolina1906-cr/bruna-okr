@@ -1,5 +1,5 @@
 import streamlit as st
-from db import get_departments, get_key_results, get_monthly_values, upsert_monthly_value, get_setting
+from db import get_departments, get_key_results, get_monthly_values, upsert_monthly_value, get_setting, set_setting
 from calculations import calcular_avance, semaforo
 from components.semaforo import badge
 from constants import MESES
@@ -7,9 +7,26 @@ from constants import MESES
 st.set_page_config(page_title="Registrar datos", layout="wide")
 st.title("📋 Registrar datos del mes")
 
+# Selector de mes activo
 mes_activo = int(get_setting("active_month", 1))
 year_activo = int(get_setting("active_year", 2026))
-st.info(f"Mes activo: **{MESES[mes_activo-1]} {year_activo}** — Para cambiar el mes activo ve a ⚙️ Control en el menú lateral.")
+
+col1, col2 = st.columns([2, 2])
+with col1:
+    nuevo_mes = st.selectbox("Mes a registrar:", options=list(range(1, 13)),
+                              format_func=lambda m: MESES[m-1], index=mes_activo-1)
+with col2:
+    nuevo_year = st.number_input("Año:", min_value=2024, max_value=2030, value=year_activo)
+
+if nuevo_mes != mes_activo or nuevo_year != year_activo:
+    set_setting("active_month", nuevo_mes)
+    set_setting("active_year", nuevo_year)
+    mes_activo = nuevo_mes
+    year_activo = nuevo_year
+    st.cache_data.clear()
+    st.rerun()
+
+st.divider()
 
 departments = get_departments()
 dept_names = {d["code"]: d["name"] for d in departments}
@@ -25,7 +42,7 @@ dept = next((d for d in departments if d["code"] == selected), {})
 if dept.get("objective"):
     st.caption(f"Objetivo: {dept['objective']}")
 
-st.subheader(f"KRs — {dept_names[selected]}")
+st.subheader(f"KRs — {dept_names[selected]} — {MESES[mes_activo-1]} {year_activo}")
 
 with st.form("ingreso_form"):
     nuevos_valores = {}
@@ -55,6 +72,6 @@ with st.form("ingreso_form"):
     if submitted:
         for kr_id, valor in nuevos_valores.items():
             upsert_monthly_value(kr_id, year_activo, mes_activo, valor)
-        st.success("Datos guardados correctamente.")
+        st.success(f"Datos de {MESES[mes_activo-1]} {year_activo} guardados correctamente.")
         st.cache_data.clear()
         st.rerun()
