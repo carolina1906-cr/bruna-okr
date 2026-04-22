@@ -4,22 +4,26 @@ from calculations import calcular_avance, semaforo
 from components.semaforo import badge
 from constants import MESES
 
-st.set_page_config(page_title="Departamento", layout="wide")
-st.title("📋 Ingreso por Departamento")
+st.set_page_config(page_title="Registrar datos", layout="wide")
+st.title("📋 Registrar datos del mes")
 
 mes_activo = int(get_setting("active_month", 1))
 year_activo = int(get_setting("active_year", 2026))
-st.caption(f"Mes activo: {MESES[mes_activo-1]} {year_activo}")
+st.info(f"Mes activo: **{MESES[mes_activo-1]} {year_activo}** — Para cambiar el mes activo ve a ⚙️ Control en el menú lateral.")
 
 departments = get_departments()
 dept_names = {d["code"]: d["name"] for d in departments}
-selected = st.selectbox("Selecciona tu area:", options=[d["code"] for d in departments],
+selected = st.selectbox("Selecciona tu área:", options=[d["code"] for d in departments],
                         format_func=lambda c: dept_names[c])
 
 krs = get_key_results(selected)
 if not krs:
-    st.warning("No hay KRs registrados para esta area.")
+    st.warning("No hay KRs registrados para esta área.")
     st.stop()
+
+dept = next((d for d in departments if d["code"] == selected), {})
+if dept.get("objective"):
+    st.caption(f"Objetivo: {dept['objective']}")
 
 st.subheader(f"KRs — {dept_names[selected]}")
 
@@ -33,7 +37,7 @@ with st.form("ingreso_form"):
 
         col1, col2, col3 = st.columns([3, 1, 1])
         with col1:
-            st.markdown(f"**{kr['name']}** ({kr['unit']}) | Meta: {kr['goal']}")
+            st.markdown(f"**{kr['name']}** ({kr['unit']}) | Meta: {kr['goal']} | Base: {kr['base']}")
             st.markdown(badge(estado), unsafe_allow_html=True)
         with col2:
             nuevo = st.number_input(

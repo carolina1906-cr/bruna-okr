@@ -1,5 +1,5 @@
 import streamlit as st
-from db import get_departments, get_key_results, get_monthly_values, get_setting
+from db import get_departments, get_key_results, get_monthly_values, get_setting, set_setting
 from calculations import calcular_avance, semaforo
 from constants import MESES
 
@@ -11,27 +11,56 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    .main-title { font-size: 28px; font-weight: 700; color: #1A2744; margin-bottom: 4px; }
-    .main-sub { font-size: 15px; color: #666; margin-bottom: 24px; }
-    .summary-card { background: #f8f9fa; border-radius: 10px; padding: 16px 20px; text-align: center; margin-bottom: 8px; }
-    .summary-num { font-size: 32px; font-weight: 700; }
-    .summary-label { font-size: 13px; color: #666; margin-top: 4px; }
-    .dept-btn { display: block; width: 100%; text-align: left; background: white; border: 1.5px solid #e9ecef; border-radius: 10px; padding: 14px 18px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; }
-    .dept-btn:hover { border-color: #1A2744; background: #f0f4ff; }
-    .dept-name { font-size: 15px; font-weight: 600; color: #1A2744; }
-    .dept-obj { font-size: 12px; color: #888; margin-top: 3px; }
-    .dept-pct { font-size: 18px; font-weight: 700; float: right; margin-top: -20px; }
-    .section-title { font-size: 18px; font-weight: 600; color: #1A2744; margin: 24px 0 12px 0; }
-    .rag-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+    .main-title { font-size: 26px; font-weight: 700; color: #1A2744; margin-bottom: 2px; }
+    .main-sub { font-size: 14px; color: #888; margin-bottom: 20px; }
+    .summary-card { background: #f8f9fa; border-radius: 10px; padding: 14px 16px; text-align: center; }
+    .summary-num { font-size: 28px; font-weight: 700; }
+    .summary-label { font-size: 12px; color: #888; margin-top: 2px; }
+    .section-title { font-size: 17px; font-weight: 600; color: #1A2744; margin: 20px 0 10px 0; }
+    .kr-card { background: #f8f9fa; border-radius: 8px; padding: 12px 14px; margin-bottom: 6px; border-left: 4px solid #dee2e6; }
+    .kr-card.verde { border-left-color: #2DC653; }
+    .kr-card.amarillo { border-left-color: #FFD600; }
+    .kr-card.rojo { border-left-color: #E63946; }
+    .kr-card.navy { border-left-color: #1A2744; }
+    .kr-card.gris { border-left-color: #D0D4DF; }
+    .kr-name { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+    .kr-meta { font-size: 11px; color: #888; margin-bottom: 4px; }
+    .kr-pct { font-size: 18px; font-weight: 700; }
+    .dept-obj { font-size: 12px; color: #666; font-style: italic; margin-bottom: 12px; }
 </style>
 """, unsafe_allow_html=True)
 
+# --- Estado ---
+if "dept_selected" not in st.session_state:
+    st.session_state.dept_selected = None
+
+# --- Configuración mes ---
 mes_activo = int(get_setting("active_month", 1))
 year_activo = int(get_setting("active_year", 2026))
 
-st.markdown(f'<div class="main-title">📊 OKR Tracker — Bruna Group {year_activo}</div>', unsafe_allow_html=True)
-st.markdown(f'<div class="main-sub">Mes activo: {MESES[mes_activo-1]} {year_activo}</div>', unsafe_allow_html=True)
+# --- Header ---
+st.markdown('<div class="main-title">📊 OKR Tracker — Bruna Group</div>', unsafe_allow_html=True)
 
+col_mes, col_year, col_modo = st.columns([2, 2, 3])
+with col_mes:
+    nuevo_mes = st.selectbox("Mes activo", options=list(range(1, 13)),
+                              format_func=lambda m: MESES[m-1], index=mes_activo-1, key="sel_mes")
+with col_year:
+    nuevo_year = st.number_input("Año", min_value=2024, max_value=2030, value=year_activo, key="sel_year")
+with col_modo:
+    modo = st.radio("Ver", ["Mes activo", "Acumulado año"], horizontal=True, key="modo_vista")
+
+if nuevo_mes != mes_activo or nuevo_year != year_activo:
+    set_setting("active_month", nuevo_mes)
+    set_setting("active_year", nuevo_year)
+    mes_activo = nuevo_mes
+    year_activo = nuevo_year
+    st.cache_data.clear()
+    st.rerun()
+
+usar_acum = modo == "Acumulado año"
+
+# --- Datos ---
 departments = get_departments()
 all_krs = get_key_results()
 
@@ -46,79 +75,90 @@ PCT_COLOR = {
     "critico": "#E63946",
     "sin_dato": "#999"
 }
-
-RAG_COLOR = {
-    "sobre_meta": "#1A2744",
-    "en_meta": "#2DC653",
-    "en_riesgo": "#FFD600",
-    "critico": "#E63946",
-    "sin_dato": "#D0D4DF"
+COLOR_MAP = {
+    "sobre_meta": "navy",
+    "en_meta": "verde",
+    "en_riesgo": "amarillo",
+    "critico": "rojo",
+    "sin_dato": "gris"
 }
+DELTA_ICON = lambda d: '↑' if d in ['Aumentar','Expandir','Elevar','Lograr','Impulsar','Automatizar','Superar','Mantener/elevar'] else '↓' if d in ['Reducir','Disminuir'] else '✓'
 
 for dept in departments:
     krs = [k for k in all_krs if k["department_code"] == dept["code"]]
     if not krs:
         continue
     dept_pcts = []
-    dept_estados = []
+    kr_list = []
     for kr in krs:
         vals = get_monthly_values(kr["id"], year_activo)
-        pct_m, _ = calcular_avance(kr, vals, mes_activo)
-        estado = semaforo(pct_m)
+        pct_m, pct_a = calcular_avance(kr, vals, mes_activo)
+        pct_show = pct_a if usar_acum and pct_a is not None else pct_m
+        estado = semaforo(pct_show)
         total += 1
-        if estado in ("en_meta", "sobre_meta"):
-            en_meta += 1
-        elif estado == "en_riesgo":
-            en_riesgo += 1
-        elif estado == "critico":
-            critico += 1
-        else:
-            sin_dato += 1
-        if pct_m is not None:
-            dept_pcts.append(pct_m)
-            promedios.append(pct_m)
-        dept_estados.append(estado)
+        if estado in ("en_meta", "sobre_meta"): en_meta += 1
+        elif estado == "en_riesgo": en_riesgo += 1
+        elif estado == "critico": critico += 1
+        else: sin_dato += 1
+        if pct_show is not None:
+            dept_pcts.append(pct_show)
+            promedios.append(pct_show)
+        kr_list.append((kr, pct_m, pct_a, pct_show, estado))
     prom = round(sum(dept_pcts) / len(dept_pcts), 1) if dept_pcts else None
-    dept_data.append((dept, prom, dept_estados))
+    dept_data.append((dept, prom, kr_list))
 
 prom_org = round(sum(promedios) / len(promedios), 1) if promedios else None
 
-# Resumen ejecutivo
+# --- Resumen ejecutivo ---
 st.markdown('<div class="section-title">Resumen organizacional</div>', unsafe_allow_html=True)
-
-col1, col2, col3, col4, col5 = st.columns(5)
-with col1:
-    pct_txt = f"{prom_org}%" if prom_org else "—"
-    color = "#1A2744" if prom_org and prom_org >= 70 else "#E63946" if prom_org and prom_org < 40 else "#BA7517"
-    st.markdown(f'<div class="summary-card"><div class="summary-num" style="color:{color};">{pct_txt}</div><div class="summary-label">Avance global</div></div>', unsafe_allow_html=True)
-with col2:
+c1, c2, c3, c4, c5 = st.columns(5)
+color_org = "#2DC653" if prom_org and prom_org >= 70 else "#E63946" if prom_org and prom_org < 40 else "#BA7517" if prom_org else "#999"
+with c1:
+    st.markdown(f'<div class="summary-card"><div class="summary-num" style="color:{color_org};">{prom_org if prom_org else "—"}%</div><div class="summary-label">Avance global</div></div>', unsafe_allow_html=True)
+with c2:
     st.markdown(f'<div class="summary-card"><div class="summary-num" style="color:#2DC653;">{en_meta}</div><div class="summary-label">En meta</div></div>', unsafe_allow_html=True)
-with col3:
+with c3:
     st.markdown(f'<div class="summary-card"><div class="summary-num" style="color:#BA7517;">{en_riesgo}</div><div class="summary-label">En riesgo</div></div>', unsafe_allow_html=True)
-with col4:
+with c4:
     st.markdown(f'<div class="summary-card"><div class="summary-num" style="color:#E63946;">{critico}</div><div class="summary-label">Crítico</div></div>', unsafe_allow_html=True)
-with col5:
+with c5:
     st.markdown(f'<div class="summary-card"><div class="summary-num" style="color:#999;">{sin_dato}</div><div class="summary-label">Sin dato</div></div>', unsafe_allow_html=True)
 
-# Menu por area
+# --- Menu por area ---
 st.markdown('<div class="section-title">Ver por área</div>', unsafe_allow_html=True)
-st.caption("Selecciona un área para ver sus KRs en detalle")
 
 cols = st.columns(2)
-for i, (dept, prom, estados) in enumerate(dept_data):
+for i, (dept, prom, kr_list) in enumerate(dept_data):
     with cols[i % 2]:
-        pct_txt = f"{prom}%" if prom is not None else "Sin datos"
         pct_color = "#2DC653" if prom and prom >= 70 else "#E63946" if prom and prom < 40 else "#BA7517" if prom else "#999"
-        dots = "".join([f'<span class="rag-dot" style="background:{RAG_COLOR[e]};"></span>' for e in estados])
-        if st.button(f"**{dept['name']}** — {pct_txt}", key=f"btn_{dept['code']}", use_container_width=True):
-            st.switch_page("pages/2_Departamento.py")
-        st.caption(dept.get("objective", "")[:80] + "..." if dept.get("objective") and len(dept.get("objective","")) > 80 else dept.get("objective",""))
+        pct_txt = f"{prom}%" if prom is not None else "Sin datos"
+        label = f"{dept['name']}  —  {pct_txt}"
+        if st.button(label, key=f"btn_{dept['code']}", use_container_width=True):
+            if st.session_state.dept_selected == dept["code"]:
+                st.session_state.dept_selected = None
+            else:
+                st.session_state.dept_selected = dept["code"]
+            st.rerun()
 
-st.divider()
-st.markdown("""
-**Navegación:**
-- 📊 **Dashboard** — Vista completa de todos los KRs con semáforo
-- 📋 **Departamento** — Ingresar datos mensuales por área  
-- ⚙️ **Control** — Cambiar mes activo
-- 📥 **Exportar** — Descargar Excel
-""")
+# --- Vista detalle por area ---
+if st.session_state.dept_selected:
+    selected = next((d for d in dept_data if d[0]["code"] == st.session_state.dept_selected), None)
+    if selected:
+        dept, prom, kr_list = selected
+        st.divider()
+        st.markdown(f'<div class="section-title">📋 {dept["name"]}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="dept-obj">{dept.get("objective","")}</div>', unsafe_allow_html=True)
+
+        for kr, pct_m, pct_a, pct_show, estado in kr_list:
+            color_class = COLOR_MAP.get(estado, "gris")
+            pct_color = PCT_COLOR.get(estado, "#999")
+            pct_txt = f"{pct_show:.1f}%" if pct_show is not None else "Sin dato"
+            acum_txt = f"Acum: {pct_a:.1f}%" if pct_a is not None else ""
+            icon = DELTA_ICON(kr["delta"])
+            st.markdown(f"""
+            <div class="kr-card {color_class}">
+                <div class="kr-name">{icon} {kr['name']}</div>
+                <div class="kr-meta">Meta: {kr['goal']} {kr['unit']} &nbsp;|&nbsp; Base: {kr['base']} &nbsp;{f'| {acum_txt}' if acum_txt else ''}</div>
+                <div class="kr-pct" style="color:{pct_color};">{pct_txt}</div>
+            </div>
+            """, unsafe_allow_html=True)
