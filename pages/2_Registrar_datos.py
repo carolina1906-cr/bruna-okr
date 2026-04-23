@@ -4,9 +4,8 @@ from calculations import calcular_avance, semaforo
 from components.semaforo import badge
 from constants import MESES
 
-if not st.session_state.get("authentication_status"):
-    st.error("Debes iniciar sesion primero.")
-    st.stop()
+from auth import check_login
+check_login()
 
 st.set_page_config(page_title="Registrar datos", layout="wide")
 st.title("Registrar datos del mes")
