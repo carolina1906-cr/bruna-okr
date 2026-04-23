@@ -20,4 +20,11 @@ def check_login():
         st.stop()
     authenticator.logout(location="sidebar")
     st.sidebar.write(f"Hola, {st.session_state.get('name')}")
+    try:
+        if authenticator.reset_password(st.session_state.get("username"), location="sidebar"):
+            with open("auth_config.yaml", "w") as file:
+                yaml.dump(config, file, default_flow_style=False)
+            st.sidebar.success("Contrasena actualizada correctamente.")
+    except Exception as e:
+        st.sidebar.error(f"Error: {e}")
     return authenticator
