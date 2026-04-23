@@ -2,6 +2,13 @@ import streamlit as st
 from db import get_setting
 from constants import MESES
 st.set_page_config(page_title="Exportar", layout="wide")
+st.markdown("""
+<style>
+@media (max-width: 640px) {
+    [data-testid="stPageLink-NavLink"] p { display: none; }
+}
+</style>
+""", unsafe_allow_html=True)
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.page_link("app.py", label="🏠 Inicio", use_container_width=True)

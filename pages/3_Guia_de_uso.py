@@ -1,6 +1,14 @@
 import streamlit as st
 st.set_page_config(page_title="Guia de uso", layout="wide")
 col1, col2, col3, col4 = st.columns(4)
+st.markdown("""
+<style>
+@media (max-width: 640px) {
+    [data-testid="stPageLink-NavLink"] p { display: none; }
+}
+</style>
+""", unsafe_allow_html=True)
+col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.page_link("app.py", label="🏠 Inicio", use_container_width=True)
 with col2:
@@ -9,10 +17,6 @@ with col3:
     st.page_link("pages/3_Guia_de_uso.py", label="📖 Guía de uso", use_container_width=True)
 with col4:
     st.page_link("pages/4_Exportar.py", label="📥 Exportar", use_container_width=True)
-st.divider()
-st.title("📖 Guía de uso — OKR Tracker Bruna Group")
-st.markdown("Bienvenido al sistema de seguimiento de OKRs de Bruna Group 2026. Aquí encontrarás todo lo que necesitas para usar la plataforma.")
-
 st.divider()
 
 st.header("¿Qué es esta plataforma?")
