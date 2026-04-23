@@ -2,39 +2,39 @@ credentials:
   usernames:
     ldmena:
       name: Luis Diego Mena
-      password: Bruna2026
+      password: $2b$12$lfc15eV.kltBwGZvhViK4eNBvg7G0FEOgRM6EOCfUst61nSs0eYXO
       area: OPS
     larley:
       name: Lourdes Arley Morales
-      password: Bruna2026
+      password: $2b$12$lfc15eV.kltBwGZvhViK4eNBvg7G0FEOgRM6EOCfUst61nSs0eYXO
       area: FIN
     jbruna:
       name: Jorge Bruna Rodriguez
-      password: Bruna2026
+      password: $2b$12$lfc15eV.kltBwGZvhViK4eNBvg7G0FEOgRM6EOCfUst61nSs0eYXO
       area: COMGL
     vgarcia:
       name: Vanessa Garcia Machado
-      password: Bruna2026
+      password: $2b$12$lfc15eV.kltBwGZvhViK4eNBvg7G0FEOgRM6EOCfUst61nSs0eYXO
       area: COMGL
     sfernandez:
       name: Stiff Fernandez Rodriguez
-      password: Bruna2026
+      password: $2b$12$lfc15eV.kltBwGZvhViK4eNBvg7G0FEOgRM6EOCfUst61nSs0eYXO
       area: BITS
     cartavia:
       name: Carlos Artavia Segura
-      password: Bruna2026
+      password: $2b$12$lfc15eV.kltBwGZvhViK4eNBvg7G0FEOgRM6EOCfUst61nSs0eYXO
       area: SPU
     culloa:
       name: Carolina Ulloa Ortega
-      password: Bruna2026
+      password: $2b$12$lfc15eV.kltBwGZvhViK4eNBvg7G0FEOgRM6EOCfUst61nSs0eYXO
       area: TH
     abruna:
       name: Andres Bruna Serrano
-      password: Bruna2026
+      password: $2b$12$lfc15eV.kltBwGZvhViK4eNBvg7G0FEOgRM6EOCfUst61nSs0eYXO
       area: NM
     abrunadobles:
       name: Antonio Xavier Bruna Dobles
-      password: Bruna2026
+      password: $2b$12$lfc15eV.kltBwGZvhViK4eNBvg7G0FEOgRM6EOCfUst61nSs0eYXO
       area: ADMIN
 cookie:
   expiry_days: 7
