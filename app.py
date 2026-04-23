@@ -7,7 +7,7 @@ st.set_page_config(
     page_icon="📊",
     layout="wide"
 )
-cst.markdown("""
+st.markdown("""
 <style>
 @media (max-width: 640px) {
     [data-testid="stPageLink-NavLink"] p { display: none; }
