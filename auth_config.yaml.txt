@@ -1,0 +1,42 @@
+credentials:
+  usernames:
+    ldmena:
+      name: Luis Diego Mena
+      password: Bruna2026
+      area: OPS
+    larley:
+      name: Lourdes Arley Morales
+      password: Bruna2026
+      area: FIN
+    jbruna:
+      name: Jorge Bruna Rodriguez
+      password: Bruna2026
+      area: COMGL
+    vgarcia:
+      name: Vanessa Garcia Machado
+      password: Bruna2026
+      area: COMGL
+    sfernandez:
+      name: Stiff Fernandez Rodriguez
+      password: Bruna2026
+      area: BITS
+    cartavia:
+      name: Carlos Artavia Segura
+      password: Bruna2026
+      area: SPU
+    culloa:
+      name: Carolina Ulloa Ortega
+      password: Bruna2026
+      area: TH
+    abruna:
+      name: Andres Bruna Serrano
+      password: Bruna2026
+      area: NM
+    abrunadobles:
+      name: Antonio Xavier Bruna Dobles
+      password: Bruna2026
+      area: ADMIN
+cookie:
+  expiry_days: 7
+  key: bruna_okr_secret_key
+  name: bruna_okr_cookie

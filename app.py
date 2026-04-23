@@ -1,12 +1,40 @@
 import streamlit as st
+import yaml
+from yaml.loader import SafeLoader
+import streamlit_authenticator as stauth
 from db import get_departments, get_key_results, get_monthly_values, get_setting, set_setting
 from calculations import calcular_avance, semaforo
 from constants import MESES
+
 st.set_page_config(
     page_title="Inicio - OKR Bruna Group",
     page_icon="assets/logo.png",
     layout="wide"
 )
+
+with open("auth_config.yaml") as file:
+    config = yaml.load(file, Loader=SafeLoader)
+
+authenticator = stauth.Authenticate(
+    config["credentials"],
+    config["cookie"]["name"],
+    config["cookie"]["key"],
+    config["cookie"]["expiry_days"]
+)
+
+authenticator.login()
+
+if st.session_state.get("authentication_status") is False:
+    st.error("Usuario o contrasena incorrectos")
+    st.stop()
+elif st.session_state.get("authentication_status") is None:
+    st.image("assets/logo.png", width=200)
+    st.warning("Por favor ingresa tu usuario y contrasena")
+    st.stop()
+
+authenticator.logout("Cerrar sesion", "sidebar")
+st.sidebar.write(f"Hola, {st.session_state.get('name')}")
+
 st.markdown("""
 <style>
     .main-title { font-size: 26px; font-weight: 700; color: #1A2744; margin-bottom: 2px; }
@@ -26,12 +54,16 @@ st.markdown("""
     .dept-obj { font-size: 12px; color: #666; font-style: italic; margin-bottom: 12px; }
 </style>
 """, unsafe_allow_html=True)
+
 if "dept_selected" not in st.session_state:
     st.session_state.dept_selected = None
+
 mes_activo = int(get_setting("active_month", 1))
 year_activo = int(get_setting("active_year", 2026))
+
 st.image("assets/logo.png", width=180)
 st.markdown('<div class="main-title">OKR Tracker - Bruna Group</div>', unsafe_allow_html=True)
+
 col_mes, col_year, col_modo = st.columns([2, 2, 3])
 with col_mes:
     nuevo_mes = st.selectbox("Mes activo", options=list(range(1, 13)),
@@ -40,6 +72,7 @@ with col_year:
     nuevo_year = st.number_input("Año", min_value=2024, max_value=2030, value=year_activo)
 with col_modo:
     modo = st.radio("Ver", ["Mes activo", "Acumulado año"], horizontal=True)
+
 if nuevo_mes != mes_activo or nuevo_year != year_activo:
     set_setting("active_month", nuevo_mes)
     set_setting("active_year", nuevo_year)
@@ -47,12 +80,16 @@ if nuevo_mes != mes_activo or nuevo_year != year_activo:
     year_activo = nuevo_year
     st.cache_data.clear()
     st.rerun()
+
 usar_acum = modo == "Acumulado año"
+
 departments = get_departments()
 all_krs = get_key_results()
+
 total = en_meta = en_riesgo = critico = sin_dato = 0
 dept_promedios = []
 dept_data = []
+
 PCT_COLOR = {
     "sobre_meta": "#1A2744",
     "en_meta": "#2DC653",
@@ -68,6 +105,7 @@ COLOR_MAP = {
     "sin_dato": "gris"
 }
 DELTA_ICON = lambda d: 'up' if d in ['Aumentar','Expandir','Elevar','Lograr','Impulsar','Automatizar','Superar','Mantener/elevar'] else 'down' if d in ['Reducir','Disminuir'] else 'ok'
+
 for dept in departments:
     krs = [k for k in all_krs if k["department_code"] == dept["code"]]
     if not krs:
@@ -90,7 +128,9 @@ for dept in departments:
     prom = round(sum(dept_pcts) / len(dept_pcts), 1) if dept_pcts else None
     dept_promedios.append(prom if prom is not None else 0)
     dept_data.append((dept, prom, kr_list))
+
 prom_org = round(sum(dept_promedios) / len(dept_promedios), 1) if dept_promedios else None
+
 st.markdown('<div class="section-title">Resumen organizacional</div>', unsafe_allow_html=True)
 c1, c2, c3, c4, c5 = st.columns(5)
 color_org = "#2DC653" if prom_org and prom_org >= 70 else "#E63946" if prom_org and prom_org < 40 else "#BA7517" if prom_org else "#999"
@@ -104,11 +144,11 @@ with c4:
     st.markdown(f'<div class="summary-card"><div class="summary-num" style="color:#E63946;">{critico}</div><div class="summary-label">Critico</div></div>', unsafe_allow_html=True)
 with c5:
     st.markdown(f'<div class="summary-card"><div class="summary-num" style="color:#999;">{sin_dato}</div><div class="summary-label">Sin dato</div></div>', unsafe_allow_html=True)
+
 st.markdown('<div class="section-title">Ver por area</div>', unsafe_allow_html=True)
 cols = st.columns(2)
 for i, (dept, prom, kr_list) in enumerate(dept_data):
     with cols[i % 2]:
-        pct_color = "#2DC653" if prom and prom >= 70 else "#E63946" if prom and prom < 40 else "#BA7517" if prom else "#999"
         pct_txt = f"{prom}%" if prom is not None else "Sin datos"
         obj_txt = dept.get("objective", "")
         if obj_txt and len(obj_txt) > 70:
@@ -120,6 +160,7 @@ for i, (dept, prom, kr_list) in enumerate(dept_data):
             else:
                 st.session_state.dept_selected = dept["code"]
             st.rerun()
+
 if st.session_state.dept_selected:
     selected = next((d for d in dept_data if d[0]["code"] == st.session_state.dept_selected), None)
     if selected:
