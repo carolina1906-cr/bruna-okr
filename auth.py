@@ -12,14 +12,12 @@ def check_login():
         config["cookie"]["key"],
         config["cookie"]["expiry_days"]
     )
-    authenticator.login()
+    authenticator.login(location="main")
     if st.session_state.get("authentication_status") is False:
         st.error("Usuario o contrasena incorrectos")
         st.stop()
     elif st.session_state.get("authentication_status") is None:
-        st.image("assets/logo.png", width=200)
-        st.warning("Por favor ingresa tu usuario y contrasena")
         st.stop()
-    authenticator.logout("Cerrar sesion", "sidebar")
+    authenticator.logout(location="sidebar")
     st.sidebar.write(f"Hola, {st.session_state.get('name')}")
     return authenticator
