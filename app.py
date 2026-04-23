@@ -2,12 +2,13 @@ import streamlit as st
 from db import get_departments, get_key_results, get_monthly_values, get_setting, set_setting
 from calculations import calcular_avance, semaforo
 from constants import MESES
-
+from components.nav import mostrar_menu
 st.set_page_config(
     page_title="Inicio — OKR Bruna Group",
     page_icon="📊",
     layout="wide"
 )
+mostrar_menu()
 
 st.markdown("""
 <style>

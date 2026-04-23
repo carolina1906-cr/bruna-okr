@@ -1,8 +1,9 @@
 import streamlit as st
 from db import get_setting
 from constants import MESES
-
+from components.nav import mostrar_menu
 st.set_page_config(page_title="Exportar", layout="wide")
+mostrar_menu()
 st.title("📥 Exportar Excel")
 
 mes_activo = int(get_setting("active_month", 1))

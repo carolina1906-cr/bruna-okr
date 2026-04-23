@@ -3,8 +3,9 @@ from db import get_departments, get_key_results, get_monthly_values, upsert_mont
 from calculations import calcular_avance, semaforo
 from components.semaforo import badge
 from constants import MESES
-
+from components.nav import mostrar_menu
 st.set_page_config(page_title="Registrar datos", layout="wide")
+mostrar_menu()
 st.title("📋 Registrar datos del mes")
 
 # Selector de mes activo

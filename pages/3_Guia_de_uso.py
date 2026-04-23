@@ -1,6 +1,7 @@
 import streamlit as st
-
+from components.nav import mostrar_menu
 st.set_page_config(page_title="Guia de uso", layout="wide")
+mostrar_menu()
 
 st.title("📖 Guía de uso — OKR Tracker Bruna Group")
 st.markdown("Bienvenido al sistema de seguimiento de OKRs de Bruna Group 2026. Aquí encontrarás todo lo que necesitas para usar la plataforma.")
