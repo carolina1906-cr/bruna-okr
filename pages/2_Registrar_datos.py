@@ -4,23 +4,7 @@ from calculations import calcular_avance, semaforo
 from components.semaforo import badge
 from constants import MESES
 st.set_page_config(page_title="Registrar datos", layout="wide")
-st.markdown("""
-<style>
-div[data-testid="stPageLink-NavLink"] p { font-size: 0px; }
-div[data-testid="stPageLink-NavLink"] { text-align: center; }
-</style>
-""", unsafe_allow_html=True)
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    st.page_link("app.py", label="🏠 Inicio", use_container_width=True)
-with col2:
-    st.page_link("pages/2_Registrar_datos.py", label="📋 Registrar datos", use_container_width=True)
-with col3:
-    st.page_link("pages/3_Guia_de_uso.py", label="📖 Guía de uso", use_container_width=True)
-with col4:
-    st.page_link("pages/4_Exportar.py", label="📥 Exportar", use_container_width=True)
-st.divider()
-st.title("📋 Registrar datos del mes")
+st.title("Registrar datos del mes")
 mes_activo = int(get_setting("active_month", 1))
 year_activo = int(get_setting("active_year", 2026))
 col1, col2 = st.columns([2, 2])
@@ -39,16 +23,16 @@ if nuevo_mes != mes_activo or nuevo_year != year_activo:
 st.divider()
 departments = get_departments()
 dept_names = {d["code"]: d["name"] for d in departments}
-selected = st.selectbox("Selecciona tu área:", options=[d["code"] for d in departments],
+selected = st.selectbox("Selecciona tu area:", options=[d["code"] for d in departments],
                         format_func=lambda c: dept_names[c])
 krs = get_key_results(selected)
 if not krs:
-    st.warning("No hay KRs registrados para esta área.")
+    st.warning("No hay KRs registrados para esta area.")
     st.stop()
 dept = next((d for d in departments if d["code"] == selected), {})
 if dept.get("objective"):
     st.caption(f"Objetivo: {dept['objective']}")
-st.subheader(f"KRs — {dept_names[selected]} — {MESES[mes_activo-1]} {year_activo}")
+st.subheader(f"KRs - {dept_names[selected]} - {MESES[mes_activo-1]} {year_activo}")
 with st.form("ingreso_form"):
     nuevos_valores = {}
     for kr in krs:
@@ -68,11 +52,13 @@ with st.form("ingreso_form"):
             )
             nuevos_valores[kr["id"]] = nuevo
         with col3:
-            pct_txt = f"{pct_m:.1f}%" if pct_m is not None else "—"
+            pct_txt = f"{pct_m:.1f}%" if pct_m is not None else "-"
             st.metric("Avance", pct_txt)
         st.divider()
-    submitted = st.form_submit_button("💾 Guardar datos del mes")
+    submitted = st.form_submit_button("Guardar datos del mes")
     if submitted:
         for kr_id, valor in nuevos_valores.items():
             upsert_monthly_value(kr_id, year_activo, mes_activo, valor)
-        st.success(f"Datos de {MESES[mes_activ
+        st.success(f"Datos de {MESES[mes_activo-1]} {year_activo} guardados correctamente.")
+        st.cache_data.clear()
+        st.rerun()
