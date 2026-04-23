@@ -3,8 +3,8 @@ from db import get_departments, get_key_results, get_monthly_values, get_setting
 from calculations import calcular_avance, semaforo
 from constants import MESES
 st.set_page_config(
-    page_title="Inicio — OKR Bruna Group",
-    page_icon="📊",
+    page_title="Inicio - OKR Bruna Group",
+    page_icon="logo.png",
     layout="wide"
 )
 st.markdown("""
@@ -50,7 +50,8 @@ if "dept_selected" not in st.session_state:
 mes_activo = int(get_setting("active_month", 1))
 year_activo = int(get_setting("active_year", 2026))
 
-st.markdown('<div class="main-title">📊 OKR Tracker — Bruna Group</div>', unsafe_allow_html=True)
+st.image("logo.png", width=180)
+st.markdown('<div class="main-title">OKR Tracker — Bruna Group</div>', unsafe_allow_html=True)
 
 col_mes, col_year, col_modo = st.columns([2, 2, 3])
 with col_mes:
