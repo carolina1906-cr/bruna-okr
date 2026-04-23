@@ -1,6 +1,11 @@
 import streamlit as st
 from db import get_setting
 from constants import MESES
+
+if not st.session_state.get("authentication_status"):
+    st.error("Debes iniciar sesion primero.")
+    st.stop()
+
 st.set_page_config(page_title="Exportar", layout="wide")
 st.title("Exportar Excel")
 mes_activo = int(get_setting("active_month", 1))

@@ -1,4 +1,9 @@
 import streamlit as st
+
+if not st.session_state.get("authentication_status"):
+    st.error("Debes iniciar sesion primero.")
+    st.stop()
+
 st.set_page_config(page_title="Guia de uso", layout="wide")
 st.title("Guia de uso - OKR Tracker Bruna Group")
 st.markdown("Bienvenido al sistema de seguimiento de OKRs de Bruna Group 2026.")
