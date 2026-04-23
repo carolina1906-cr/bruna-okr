@@ -1,0 +1,42 @@
+credentials:
+  usernames:
+    ldmena:
+      name: Luis Diego Mena
+      password: $2b$12$lfc15eV.kltBwGZvhViK4eNBvg7G0FEOgRM6EOCfUst61nSs0eYXO
+      area: OPS
+    larley:
+      name: Lourdes Arley Morales
+      password: $2b$12$lfc15eV.kltBwGZvhViK4eNBvg7G0FEOgRM6EOCfUst61nSs0eYXO
+      area: FIN
+    jbruna:
+      name: Jorge Bruna Rodriguez
+      password: $2b$12$lfc15eV.kltBwGZvhViK4eNBvg7G0FEOgRM6EOCfUst61nSs0eYXO
+      area: COMGL
+    vgarcia:
+      name: Vanessa Garcia Machado
+      password: $2b$12$lfc15eV.kltBwGZvhViK4eNBvg7G0FEOgRM6EOCfUst61nSs0eYXO
+      area: COMGL
+    sfernandez:
+      name: Stiff Fernandez Rodriguez
+      password: $2b$12$lfc15eV.kltBwGZvhViK4eNBvg7G0FEOgRM6EOCfUst61nSs0eYXO
+      area: BITS
+    cartavia:
+      name: Carlos Artavia Segura
+      password: $2b$12$lfc15eV.kltBwGZvhViK4eNBvg7G0FEOgRM6EOCfUst61nSs0eYXO
+      area: SPU
+    culloa:
+      name: Carolina Ulloa Ortega
+      password: $2b$12$lfc15eV.kltBwGZvhViK4eNBvg7G0FEOgRM6EOCfUst61nSs0eYXO
+      area: TH
+    abruna:
+      name: Andres Bruna Serrano
+      password: $2b$12$lfc15eV.kltBwGZvhViK4eNBvg7G0FEOgRM6EOCfUst61nSs0eYXO
+      area: NM
+    abrunadobles:
+      name: Antonio Xavier Bruna Dobles
+      password: $2b$12$lfc15eV.kltBwGZvhViK4eNBvg7G0FEOgRM6EOCfUst61nSs0eYXO
+      area: ADMIN
+cookie:
+  expiry_days: 7
+  key: bruna_okr_secret_key
+  name: bruna_okr_cookie
