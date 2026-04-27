@@ -1,6 +1,6 @@
 import streamlit as st
 import bcrypt
-from config import supabase
+from config import get_supabase
 
 def check_login():
     if "authentication_status" not in st.session_state:
@@ -24,6 +24,7 @@ def check_login():
     username = st.text_input("Usuario")
     password = st.text_input("Contrasena", type="password")
     if st.button("Ingresar"):
+        supabase = get_supabase()
         result = supabase.table("users").select("*").eq("username", username).execute()
         if result.data:
             user = result.data[0]
@@ -44,6 +45,7 @@ def cambiar_contrasena():
         new1 = st.text_input("Nueva contrasena", type="password", key="cp_new1")
         new2 = st.text_input("Repetir nueva contrasena", type="password", key="cp_new2")
         if st.button("Guardar", key="cp_save"):
+            supabase = get_supabase()
             username = st.session_state["username"]
             result = supabase.table("users").select("password").eq("username", username).execute()
             if not result.data:
