@@ -28,15 +28,16 @@ def check_login():
         result = supabase.table("users").select("*").eq("username", username).execute()
         if result.data:
             user = result.data[0]
-            if bcrypt.checkpw(password.encode(), user["password"].encode()):
-                st.session_state["authentication_status"] = True
-                st.session_state["username"] = username
-                st.session_state["name"] = user["name"]
-                st.rerun()
-            else:
-                st.error("Usuario o contrasena incorrectos")
+            stored = user["password"]
+            st.write(f"Usuario encontrado: {user['name']}")
+            st.write(f"Hash almacenado: {stored[:20]}...")
+            try:
+                match = bcrypt.checkpw(password.encode(), stored.encode())
+                st.write(f"Contrasena correcta: {match}")
+            except Exception as e:
+                st.error(f"Error bcrypt: {e}")
         else:
-            st.error("Usuario o contrasena incorrectos")
+            st.error("Usuario no encontrado en base de datos")
     st.stop()
 
 def cambiar_contrasena():
