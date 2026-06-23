@@ -29,6 +29,10 @@ st.markdown("""
     .kr-meta { font-size: 11px; color: #888; margin-bottom: 4px; }
     .kr-pct { font-size: 18px; font-weight: 700; }
     .dept-obj { font-size: 12px; color: #666; font-style: italic; margin-bottom: 12px; }
+    .delta-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: 600; }
+    .delta-up { background: #e8f5e9; color: #2DC653; }
+    .delta-down { background: #fce4e4; color: #E63946; }
+    .delta-ok { background: #e8eaf6; color: #1A2744; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -81,7 +85,22 @@ COLOR_MAP = {
     "critico": "rojo",
     "sin_dato": "gris"
 }
-DELTA_ICON = lambda d: 'up' if d in ['Aumentar','Expandir','Elevar','Lograr','Impulsar','Automatizar','Superar','Mantener/elevar'] else 'down' if d in ['Reducir','Disminuir'] else 'ok'
+
+def delta_icon(delta):
+    if delta in ['Aumentar','Expandir','Elevar','Lograr','Impulsar','Automatizar','Superar','Mantener/elevar']:
+        return '<span class="delta-tag delta-up">subir es bueno</span>'
+    elif delta in ['Reducir','Disminuir']:
+        return '<span class="delta-tag delta-down">bajar es bueno</span>'
+    else:
+        return '<span class="delta-tag delta-ok">completar</span>'
+
+def delta_arrow(delta):
+    if delta in ['Aumentar','Expandir','Elevar','Lograr','Impulsar','Automatizar','Superar','Mantener/elevar']:
+        return '&#8593;'
+    elif delta in ['Reducir','Disminuir']:
+        return '&#8595;'
+    else:
+        return '&#10003;'
 
 for dept in departments:
     krs = [k for k in all_krs if k["department_code"] == dept["code"]]
@@ -123,6 +142,33 @@ with c5:
     st.markdown(f'<div class="summary-card"><div class="summary-num" style="color:#999;">{sin_dato}</div><div class="summary-label">Sin dato</div></div>', unsafe_allow_html=True)
 
 st.markdown('<div class="section-title">Ver por area</div>', unsafe_allow_html=True)
+
+# Si hay un area seleccionada, mostrarla PRIMERO antes de los botones
+if st.session_state.dept_selected:
+    selected = next((d for d in dept_data if d[0]["code"] == st.session_state.dept_selected), None)
+    if selected:
+        dept, prom, kr_list = selected
+        st.markdown(f'<div class="section-title">{dept["name"]}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="dept-obj">{dept.get("objective","")}</div>', unsafe_allow_html=True)
+        for kr, pct_m, pct_a, pct_show, estado in kr_list:
+            color_class = COLOR_MAP.get(estado, "gris")
+            pct_color = PCT_COLOR.get(estado, "#999")
+            pct_txt = f"{pct_show:.1f}%" if pct_show is not None else "Sin dato"
+            acum_txt = f"Acum: {pct_a:.1f}%" if pct_a is not None else ""
+            arrow = delta_arrow(kr["delta"])
+            tag = delta_icon(kr["delta"])
+            st.markdown(f"""
+            <div class="kr-card {color_class}">
+                <div class="kr-name">{arrow} {kr['name']} {tag}</div>
+                <div class="kr-meta">Meta: {kr['goal']} {kr['unit']} | Base: {kr['base']} {f'| {acum_txt}' if acum_txt else ''}</div>
+                <div class="kr-pct" style="color:{pct_color};">{pct_txt}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        if st.button("Cerrar detalle"):
+            st.session_state.dept_selected = None
+            st.rerun()
+        st.divider()
+
 cols = st.columns(2)
 for i, (dept, prom, kr_list) in enumerate(dept_data):
     with cols[i % 2]:
@@ -137,24 +183,3 @@ for i, (dept, prom, kr_list) in enumerate(dept_data):
             else:
                 st.session_state.dept_selected = dept["code"]
             st.rerun()
-
-if st.session_state.dept_selected:
-    selected = next((d for d in dept_data if d[0]["code"] == st.session_state.dept_selected), None)
-    if selected:
-        dept, prom, kr_list = selected
-        st.divider()
-        st.markdown(f'<div class="section-title">{dept["name"]}</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="dept-obj">{dept.get("objective","")}</div>', unsafe_allow_html=True)
-        for kr, pct_m, pct_a, pct_show, estado in kr_list:
-            color_class = COLOR_MAP.get(estado, "gris")
-            pct_color = PCT_COLOR.get(estado, "#999")
-            pct_txt = f"{pct_show:.1f}%" if pct_show is not None else "Sin dato"
-            acum_txt = f"Acum: {pct_a:.1f}%" if pct_a is not None else ""
-            icon = DELTA_ICON(kr["delta"])
-            st.markdown(f"""
-            <div class="kr-card {color_class}">
-                <div class="kr-name">{icon} {kr['name']}</div>
-                <div class="kr-meta">Meta: {kr['goal']} {kr['unit']} | Base: {kr['base']} {f'| {acum_txt}' if acum_txt else ''}</div>
-                <div class="kr-pct" style="color:{pct_color};">{pct_txt}</div>
-            </div>
-            """, unsafe_allow_html=True)
