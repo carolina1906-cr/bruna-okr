@@ -34,6 +34,10 @@ st.markdown("""
 
 if "dept_selected" not in st.session_state:
     st.session_state.dept_selected = None
+if "last_mes" not in st.session_state:
+    st.session_state.last_mes = None
+if "last_modo" not in st.session_state:
+    st.session_state.last_modo = None
 
 mes_activo = int(get_setting("active_month", 1))
 year_activo = int(get_setting("active_year", 2026))
@@ -49,6 +53,12 @@ with col_year:
     nuevo_year = st.number_input("Año", min_value=2024, max_value=2030, value=year_activo)
 with col_modo:
     modo = st.radio("Ver", ["Mes activo", "Acumulado año"], horizontal=True)
+
+# Si cambia el mes, año o modo, cerrar el departamento abierto
+if st.session_state.last_mes != nuevo_mes or st.session_state.last_modo != modo:
+    st.session_state.dept_selected = None
+    st.session_state.last_mes = nuevo_mes
+    st.session_state.last_modo = modo
 
 if nuevo_mes != mes_activo or nuevo_year != year_activo:
     set_setting("active_month", nuevo_mes)
