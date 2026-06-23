@@ -37,11 +37,23 @@ ESTADO_LABEL = {
 
 puede_editar = st.session_state.get("username") in ("culloa", "abrunadobles")
 
-mes_activo = int(get_setting("active_month", 1))
 year_activo = int(get_setting("active_year", 2026))
 
-mes_anterior = mes_activo - 1
-year_anterior = year_activo
+# Selector propio de esta pagina - no afecta el mes global del dashboard
+col1, col2, col3 = st.columns([2, 2, 3])
+with col1:
+    mes_sel = st.selectbox("Mes a revisar:", options=list(range(1, 13)),
+                           format_func=lambda m: MESES[m-1],
+                           index=int(get_setting("active_month", 1)) - 1)
+with col2:
+    year_sel = st.number_input("Año:", min_value=2024, max_value=2030, value=year_activo)
+with col3:
+    modo = st.radio("Vista:", ["Acumulado año", "Mes puntual"], horizontal=True)
+
+usar_acum = modo == "Acumulado año"
+
+mes_anterior = mes_sel - 1
+year_anterior = year_sel
 if mes_anterior == 0:
     mes_anterior = 12
     year_anterior -= 1
@@ -49,6 +61,8 @@ if mes_anterior == 0:
 supabase = get_supabase()
 departments = get_departments()
 all_krs = get_key_results()
+
+st.divider()
 
 tabs = st.tabs([d["name"] for d in departments])
 
@@ -66,12 +80,13 @@ for tab, dept in zip(tabs, departments):
         st.divider()
 
         for kr in krs:
-            vals = get_monthly_values(kr["id"], year_activo)
-            pct_m, pct_a = calcular_avance(kr, vals, mes_activo)
-            pct_show = pct_a if pct_a is not None else pct_m
+            vals = get_monthly_values(kr["id"], year_sel)
+            pct_m, pct_a = calcular_avance(kr, vals, mes_sel)
+            pct_show = pct_a if usar_acum and pct_a is not None else pct_m
             estado = semaforo(pct_show)
 
-            seg_actual = supabase.table("seguimiento_okr").select("*").eq("kr_id", kr["id"]).eq("year", year_activo).eq("month", mes_activo).execute()
+            # Los compromisos siempre se guardan por mes puntual
+            seg_actual = supabase.table("seguimiento_okr").select("*").eq("kr_id", kr["id"]).eq("year", year_sel).eq("month", mes_sel).execute()
             seg_anterior = supabase.table("seguimiento_okr").select("*").eq("kr_id", kr["id"]).eq("year", year_anterior).eq("month", mes_anterior).execute()
 
             compromiso_anterior = seg_anterior.data[0]["compromiso_nuevo"] if seg_anterior.data else None
@@ -81,11 +96,12 @@ for tab, dept in zip(tabs, departments):
             color = ESTADO_COLOR.get(estado, "#999")
             pct_txt = f"{pct_show:.1f}%" if pct_show is not None else "Sin dato"
             estado_txt = ESTADO_LABEL.get(estado, "Sin dato")
+            vista_txt = "Acumulado" if usar_acum else MESES[mes_sel-1]
 
             st.markdown(f"""
             <div style="border-left: 4px solid {color}; padding: 10px 14px; margin-bottom: 8px; background: #f8f9fa; border-radius: 0 8px 8px 0;">
                 <div style="font-size:14px; font-weight:600; color:#1A2744; margin-bottom:4px;">{kr['name']}</div>
-                <div style="font-size:12px; color:#888;">Meta: {kr['goal']} {kr['unit']} | Base: {kr['base']}</div>
+                <div style="font-size:12px; color:#888;">Meta: {kr['goal']} {kr['unit']} | Base: {kr['base']} | Vista: {vista_txt}</div>
                 <div style="font-size:22px; font-weight:700; color:{color}; margin-top:4px;">{pct_txt} <span style="font-size:12px; font-weight:400; color:{color};">({estado_txt})</span></div>
             </div>
             """, unsafe_allow_html=True)
@@ -98,7 +114,7 @@ for tab, dept in zip(tabs, departments):
                     st.success(cumplio_actual)
 
             if compromiso_actual and not puede_editar:
-                st.markdown(f"**Compromiso para {MESES[mes_activo-1]} {year_activo}:**")
+                st.markdown(f"**Compromiso para {MESES[mes_sel-1]} {year_sel}:**")
                 st.write(compromiso_actual)
 
             pregunta = PREGUNTAS.get(estado, "")
@@ -115,7 +131,7 @@ for tab, dept in zip(tabs, departments):
                     )
                 with col2:
                     nuevo_compromiso = st.text_area(
-                        f"Compromiso para {MESES[mes_activo-1]}:",
+                        f"Compromiso para {MESES[mes_sel-1]}:",
                         value=compromiso_actual or "",
                         key=f"compromiso_{dept['code']}_{kr['id']}",
                         height=80
@@ -123,8 +139,8 @@ for tab, dept in zip(tabs, departments):
                 if st.button("Guardar", key=f"guardar_{dept['code']}_{kr['id']}"):
                     data = {
                         "kr_id": kr["id"],
-                        "year": year_activo,
-                        "month": mes_activo,
+                        "year": year_sel,
+                        "month": mes_sel,
                         "cumplio_compromiso": nuevo_cumplio,
                         "compromiso_nuevo": nuevo_compromiso,
                         "updated_by": st.session_state.get("username"),
