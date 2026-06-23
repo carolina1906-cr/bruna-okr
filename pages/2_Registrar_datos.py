@@ -65,14 +65,6 @@ def delta_arrow(delta):
     else:
         return '&#10003;'
 
-def delta_label(delta):
-    if delta in ['Aumentar','Expandir','Elevar','Lograr','Impulsar','Automatizar','Superar','Mantener/elevar']:
-        return '<span style="font-size:10px;background:#e8f5e9;color:#2DC653;padding:2px 6px;border-radius:4px;font-weight:600;">subir es bueno</span>'
-    elif delta in ['Reducir','Disminuir']:
-        return '<span style="font-size:10px;background:#fce4e4;color:#E63946;padding:2px 6px;border-radius:4px;font-weight:600;">bajar es bueno</span>'
-    else:
-        return '<span style="font-size:10px;background:#e8eaf6;color:#1A2744;padding:2px 6px;border-radius:4px;font-weight:600;">completar</span>'
-
 with st.form("ingreso_form"):
     nuevos_valores = {}
     for kr in krs:
@@ -83,8 +75,7 @@ with st.form("ingreso_form"):
         col1, col2, col3 = st.columns([3, 1, 1])
         with col1:
             arrow = delta_arrow(kr["delta"])
-            tag = delta_label(kr["delta"])
-            st.markdown(f"{arrow} **{kr['name']}** {tag} | ({kr['unit']}) | Meta: {kr['goal']} | Base: {kr['base']}", unsafe_allow_html=True)
+            st.markdown(f"{arrow} **{kr['name']}** | ({kr['unit']}) | Meta: {kr['goal']} | Base: {kr['base']}", unsafe_allow_html=True)
             st.markdown(badge(estado), unsafe_allow_html=True)
         with col2:
             nuevo = st.number_input(
