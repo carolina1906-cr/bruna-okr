@@ -13,6 +13,21 @@ st.title("Registrar datos del mes")
 mes_activo = int(get_setting("active_month", 1))
 year_activo = int(get_setting("active_year", 2026))
 
+departments = get_departments()
+dept_names = {d["code"]: d["name"] for d in departments}
+
+if "area_selected" not in st.session_state:
+    st.session_state.area_selected = list(dept_names.keys())[0]
+
+selected = st.selectbox(
+    "Selecciona tu area:",
+    options=[d["code"] for d in departments],
+    format_func=lambda c: dept_names[c],
+    index=[d["code"] for d in departments].index(st.session_state.area_selected)
+    if st.session_state.area_selected in [d["code"] for d in departments] else 0
+)
+st.session_state.area_selected = selected
+
 col1, col2 = st.columns([2, 2])
 with col1:
     nuevo_mes = st.selectbox("Mes a registrar:", options=list(range(1, 13)),
@@ -29,22 +44,6 @@ if nuevo_mes != mes_activo or nuevo_year != year_activo:
     st.rerun()
 
 st.divider()
-
-departments = get_departments()
-dept_names = {d["code"]: d["name"] for d in departments}
-
-if "area_selected" not in st.session_state:
-    st.session_state.area_selected = list(dept_names.keys())[0]
-
-selected = st.selectbox(
-    "Selecciona tu area:",
-    options=[d["code"] for d in departments],
-    format_func=lambda c: dept_names[c],
-    index=[d["code"] for d in departments].index(st.session_state.area_selected)
-    if st.session_state.area_selected in [d["code"] for d in departments] else 0
-)
-
-st.session_state.area_selected = selected
 
 krs = get_key_results(selected)
 if not krs:
