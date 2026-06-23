@@ -3,20 +3,23 @@ from db import get_departments, get_key_results, get_monthly_values, upsert_mont
 from calculations import calcular_avance, semaforo
 from components.semaforo import badge
 from constants import MESES
-
 from auth import check_login
+
 check_login()
 
 st.set_page_config(page_title="Registrar datos", layout="wide")
 st.title("Registrar datos del mes")
+
 mes_activo = int(get_setting("active_month", 1))
 year_activo = int(get_setting("active_year", 2026))
+
 col1, col2 = st.columns([2, 2])
 with col1:
     nuevo_mes = st.selectbox("Mes a registrar:", options=list(range(1, 13)),
                               format_func=lambda m: MESES[m-1], index=mes_activo-1)
 with col2:
     nuevo_year = st.number_input("Año:", min_value=2024, max_value=2030, value=year_activo)
+
 if nuevo_mes != mes_activo or nuevo_year != year_activo:
     set_setting("active_month", nuevo_mes)
     set_setting("active_year", nuevo_year)
@@ -24,19 +27,52 @@ if nuevo_mes != mes_activo or nuevo_year != year_activo:
     year_activo = nuevo_year
     st.cache_data.clear()
     st.rerun()
+
 st.divider()
+
 departments = get_departments()
 dept_names = {d["code"]: d["name"] for d in departments}
-selected = st.selectbox("Selecciona tu area:", options=[d["code"] for d in departments],
-                        format_func=lambda c: dept_names[c])
+
+if "area_selected" not in st.session_state:
+    st.session_state.area_selected = list(dept_names.keys())[0]
+
+selected = st.selectbox(
+    "Selecciona tu area:",
+    options=[d["code"] for d in departments],
+    format_func=lambda c: dept_names[c],
+    index=[d["code"] for d in departments].index(st.session_state.area_selected)
+    if st.session_state.area_selected in [d["code"] for d in departments] else 0
+)
+
+st.session_state.area_selected = selected
+
 krs = get_key_results(selected)
 if not krs:
     st.warning("No hay KRs registrados para esta area.")
     st.stop()
+
 dept = next((d for d in departments if d["code"] == selected), {})
 if dept.get("objective"):
     st.caption(f"Objetivo: {dept['objective']}")
+
 st.subheader(f"KRs - {dept_names[selected]} - {MESES[mes_activo-1]} {year_activo}")
+
+def delta_arrow(delta):
+    if delta in ['Aumentar','Expandir','Elevar','Lograr','Impulsar','Automatizar','Superar','Mantener/elevar']:
+        return '&#8593;'
+    elif delta in ['Reducir','Disminuir']:
+        return '&#8595;'
+    else:
+        return '&#10003;'
+
+def delta_label(delta):
+    if delta in ['Aumentar','Expandir','Elevar','Lograr','Impulsar','Automatizar','Superar','Mantener/elevar']:
+        return '<span style="font-size:10px;background:#e8f5e9;color:#2DC653;padding:2px 6px;border-radius:4px;font-weight:600;">subir es bueno</span>'
+    elif delta in ['Reducir','Disminuir']:
+        return '<span style="font-size:10px;background:#fce4e4;color:#E63946;padding:2px 6px;border-radius:4px;font-weight:600;">bajar es bueno</span>'
+    else:
+        return '<span style="font-size:10px;background:#e8eaf6;color:#1A2744;padding:2px 6px;border-radius:4px;font-weight:600;">completar</span>'
+
 with st.form("ingreso_form"):
     nuevos_valores = {}
     for kr in krs:
@@ -46,7 +82,9 @@ with st.form("ingreso_form"):
         estado = semaforo(pct_m)
         col1, col2, col3 = st.columns([3, 1, 1])
         with col1:
-            st.markdown(f"**{kr['name']}** ({kr['unit']}) | Meta: {kr['goal']} | Base: {kr['base']}")
+            arrow = delta_arrow(kr["delta"])
+            tag = delta_label(kr["delta"])
+            st.markdown(f"{arrow} **{kr['name']}** {tag} | ({kr['unit']}) | Meta: {kr['goal']} | Base: {kr['base']}", unsafe_allow_html=True)
             st.markdown(badge(estado), unsafe_allow_html=True)
         with col2:
             nuevo = st.number_input(
