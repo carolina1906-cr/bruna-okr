@@ -11,6 +11,19 @@ st.set_page_config(page_title="Seguimiento OKR", layout="wide")
 st.title("Seguimiento OKR")
 st.caption("Vision acumulada del ano — revision ejecutiva por area")
 
+with st.expander("Como se calcula el avance acumulado?"):
+    st.markdown("""
+| Tipo de KR | Como se calcula el acumulado |
+|---|---|
+| **Acumulado anual** | Suma de todos los meses registrados hasta el mes seleccionado vs meta anual |
+| **Mensual puntual** | Promedio de los meses con dato registrado vs meta |
+| **Fechas fijas** | Ultimo valor medido disponible vs meta |
+| **Completado / No** | 1 = 100%, 0 = 0% |
+
+> **Importante:** Para KRs de tipo mensual puntual, el % se calcula solo sobre los meses que tienen dato registrado. 
+> Si hay meses sin registro, el sistema lo indica para que pueda evaluar si el resultado es representativo.
+""")
+
 PREGUNTAS = {
     "critico": "Que esta bloqueando este resultado y que necesitan para desbloquearlo?",
     "en_riesgo": "Que acciones concretas tienen para los proximos 30 dias?",
@@ -57,31 +70,32 @@ def calcular_acumulado_seguimiento(kr, vals, mes_hasta):
     if tipo == "completado":
         v = vals.get(mes_hasta)
         if v is None:
-            return None
-        return 100.0 if v >= 1 else 0.0
+            return None, 0, 0
+        pct = 100.0 if v >= 1 else 0.0
+        return pct, 1, 1
 
     elif tipo == "acumulado_anual":
-        valores = [vals.get(m) for m in range(1, mes_hasta + 1) if vals.get(m) is not None]
+        valores = [(m, vals.get(m)) for m in range(1, mes_hasta + 1) if vals.get(m) is not None]
         if not valores:
-            return None
-        return pct_simple(sum(valores), meta, delta, base)
+            return None, 0, mes_hasta
+        acum = sum(v for _, v in valores)
+        return pct_simple(acum, meta, delta, base), len(valores), mes_hasta
 
     elif tipo == "mensual_puntual":
-        # Promedio de meses con dato hasta el mes seleccionado
-        valores = [vals.get(m) for m in range(1, mes_hasta + 1) if vals.get(m) is not None]
+        valores = [(m, vals.get(m)) for m in range(1, mes_hasta + 1) if vals.get(m) is not None]
         if not valores:
-            return None
-        promedio = sum(valores) / len(valores)
-        return pct_simple(promedio, meta, delta, base)
+            return None, 0, mes_hasta
+        promedio = sum(v for _, v in valores) / len(valores)
+        return pct_simple(promedio, meta, delta, base), len(valores), mes_hasta
 
     elif tipo == "fechas_fijas":
         meses_con_valor = [m for m in range(1, mes_hasta + 1) if vals.get(m) is not None]
         if not meses_con_valor:
-            return None
+            return None, 0, mes_hasta
         v = vals.get(max(meses_con_valor))
-        return pct_simple(v, meta, delta, base)
+        return pct_simple(v, meta, delta, base), len(meses_con_valor), mes_hasta
 
-    return None
+    return None, 0, mes_hasta
 
 puede_editar = st.session_state.get("username") in ("culloa", "abrunadobles")
 
@@ -127,7 +141,7 @@ for tab, dept in zip(tabs, departments):
 
         for kr in krs:
             vals = get_monthly_values(kr["id"], year_sel)
-            pct_show = calcular_acumulado_seguimiento(kr, vals, mes_hasta)
+            pct_show, meses_con_dato, total_meses = calcular_acumulado_seguimiento(kr, vals, mes_hasta)
             estado = semaforo(pct_show)
 
             seg_actual = supabase.table("seguimiento_okr").select("*").eq("kr_id", kr["id"]).eq("year", year_sel).eq("month", mes_hasta).execute()
@@ -141,11 +155,19 @@ for tab, dept in zip(tabs, departments):
             pct_txt = f"{pct_show:.1f}%" if pct_show is not None else "Sin dato"
             estado_txt = ESTADO_LABEL.get(estado, "Sin dato")
 
+            meses_registrados = [MESES[m-1] for m in range(1, mes_hasta + 1) if vals.get(m) is not None]
+            meses_faltantes = total_meses - meses_con_dato
+
+            alerta_datos = ""
+            if kr["measurement_type"] == "mensual_puntual" and meses_faltantes > 0:
+                alerta_datos = f'<div style="font-size:11px;color:#BA7517;margin-top:4px;">⚠️ {meses_con_dato} de {total_meses} meses registrados ({", ".join(meses_registrados)}). Faltan {meses_faltantes} meses.</div>'
+
             st.markdown(f"""
             <div style="border-left: 4px solid {color}; padding: 10px 14px; margin-bottom: 8px; background: #f8f9fa; border-radius: 0 8px 8px 0;">
                 <div style="font-size:14px; font-weight:600; color:#1A2744; margin-bottom:4px;">{kr['name']}</div>
-                <div style="font-size:12px; color:#888;">Meta: {kr['goal']} {kr['unit']} | Base: {kr['base']} | Acumulado Ene - {MESES[mes_hasta-1]}</div>
+                <div style="font-size:12px; color:#888;">Meta: {kr['goal']} {kr['unit']} | Base: {kr['base']} | Ene - {MESES[mes_hasta-1]}</div>
                 <div style="font-size:22px; font-weight:700; color:{color}; margin-top:4px;">{pct_txt} <span style="font-size:12px; font-weight:400; color:{color};">({estado_txt})</span></div>
+                {alerta_datos}
             </div>
             """, unsafe_allow_html=True)
 
