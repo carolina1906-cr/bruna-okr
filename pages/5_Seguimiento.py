@@ -1,6 +1,6 @@
 import streamlit as st
 from auth import check_login
-from db import get_departments, get_key_results, get_monthly_values, get_setting
+from db import get_departments, get_key_results, get_monthly_values, get_setting, get_meta_progresiva
 from calculations import calcular_avance, semaforo
 from config import get_supabase
 from constants import MESES
@@ -17,7 +17,7 @@ with st.expander("Como se calcula el avance acumulado?"):
 |---|---|
 | **Acumulado anual** | Suma de todos los meses registrados hasta el mes seleccionado vs meta anual |
 | **Mensual puntual** | Promedio de los meses con dato registrado vs meta |
-| **Fechas fijas** | Ultimo valor medido disponible vs meta |
+| **Meta progresiva** | Avance del ultimo mes con dato vs la meta esperada de ese mes |
 | **Completado / No** | 1 = 100%, 0 = 0% |
 
 > **Importante:** Para KRs de tipo mensual puntual, el % se calcula solo sobre los meses que tienen dato registrado.
@@ -48,9 +48,8 @@ ESTADO_LABEL = {
     "sin_dato": "Sin dato",
 }
 
-def calcular_acumulado_seguimiento(kr, vals, mes_hasta):
+def calcular_acumulado_seguimiento(kr, vals, mes_hasta, year_sel, supabase):
     tipo = kr["measurement_type"]
-    meta = kr["goal"]
     delta = kr["delta"]
     base = kr.get("base") or 0
 
@@ -66,6 +65,22 @@ def calcular_acumulado_seguimiento(kr, vals, mes_hasta):
             if meta == 0:
                 return None
             return round((valor / meta) * 100, 1)
+
+    # Verificar si tiene metas progresivas
+    metas_prog = supabase.table("kr_metas_progresivas").select("*").eq("kr_id", kr["id"]).eq("year", year_sel).lte("month", mes_hasta).order("month").execute()
+
+    if metas_prog.data:
+        # Usar ultima meta progresiva disponible hasta el mes seleccionado
+        ultima = metas_prog.data[-1]
+        mes_meta = ultima["month"]
+        meta_prog = ultima["meta_mes"]
+        v = vals.get(mes_meta)
+        if v is None:
+            return None, 0, mes_hasta
+        pct = pct_simple(v, meta_prog, delta, base)
+        return pct, 1, mes_hasta
+
+    meta = kr["goal"]
 
     if tipo == "completado":
         v = vals.get(mes_hasta)
@@ -141,7 +156,7 @@ for tab, dept in zip(tabs, departments):
 
         for kr in krs:
             vals = get_monthly_values(kr["id"], year_sel)
-            pct_show, meses_con_dato, total_meses = calcular_acumulado_seguimiento(kr, vals, mes_hasta)
+            pct_show, meses_con_dato, total_meses = calcular_acumulado_seguimiento(kr, vals, mes_hasta, year_sel, supabase)
             estado = semaforo(pct_show)
 
             seg_actual = supabase.table("seguimiento_okr").select("*").eq("kr_id", kr["id"]).eq("year", year_sel).eq("month", mes_hasta).execute()
