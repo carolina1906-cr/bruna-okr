@@ -2,12 +2,13 @@ import streamlit as st
 from auth import check_login
 from db import get_departments, get_key_results
 from config import get_supabase
+from constants import MESES
 
 check_login()
 
 st.set_page_config(page_title="Editar KRs", layout="wide")
 st.title("Editar KRs")
-st.caption("Cada lider puede actualizar la redaccion, linea base, meta y direccion de sus KRs.")
+st.caption("Cada lider puede actualizar la redaccion, linea base, meta, direccion y tipo de medicion de sus KRs.")
 
 supabase = get_supabase()
 username = st.session_state.get("username")
@@ -21,6 +22,20 @@ DELTA_OPCIONES = [
     "Reducir", "Disminuir",
     "Completar", "Construir", "Crear"
 ]
+
+TIPO_OPCIONES = [
+    "mensual_puntual",
+    "acumulado_anual",
+    "fechas_fijas",
+    "completado"
+]
+
+TIPO_LABELS = {
+    "mensual_puntual": "Mensual puntual — se mide cada mes vs meta",
+    "acumulado_anual": "Acumulado anual — suma de meses vs meta anual",
+    "fechas_fijas": "Fechas fijas — solo meses especificos",
+    "completado": "Completado / No — binario 1 o 0"
+}
 
 if username in ADMIN_USERS:
     areas_editables = [d["code"] for d in departments]
@@ -65,11 +80,18 @@ for kr in all_krs:
             nuevo_delta = st.selectbox("Direccion:", options=DELTA_OPCIONES,
                                        index=delta_index, key=f"delta_{kr['id']}")
 
-        col3, col4 = st.columns(2)
+        col3, col4, col5 = st.columns(3)
         with col3:
             nueva_base = st.number_input("Linea base:", value=float(kr["base"] or 0), key=f"base_{kr['id']}")
         with col4:
             nueva_meta = st.number_input("Meta:", value=float(kr["goal"] or 0), key=f"meta_{kr['id']}")
+        with col5:
+            tipo_index = TIPO_OPCIONES.index(kr["measurement_type"]) if kr["measurement_type"] in TIPO_OPCIONES else 0
+            nuevo_tipo = st.selectbox("Tipo de medicion:",
+                                      options=TIPO_OPCIONES,
+                                      format_func=lambda t: TIPO_LABELS[t],
+                                      index=tipo_index,
+                                      key=f"tipo_{kr['id']}")
 
         if st.button("Guardar cambios", key=f"save_{kr['id']}"):
             supabase.table("key_results").update({
@@ -77,7 +99,46 @@ for kr in all_krs:
                 "base": nueva_base,
                 "goal": nueva_meta,
                 "delta": nuevo_delta,
+                "measurement_type": nuevo_tipo,
             }).eq("id", kr["id"]).execute()
             st.success("KR actualizado correctamente.")
             st.cache_data.clear()
+            st.rerun()
+
+        st.divider()
+        st.markdown("**Metas progresivas por mes** (opcional — solo si el KR tiene metas diferentes por mes)")
+
+        metas_result = supabase.table("kr_metas_progresivas").select("*").eq("kr_id", kr["id"]).eq("year", 2026).order("month").execute()
+        metas_existentes = {row["month"]: row["meta_mes"] for row in metas_result.data}
+
+        meses_sel = st.multiselect(
+            "Meses con meta progresiva:",
+            options=list(range(1, 13)),
+            default=list(metas_existentes.keys()),
+            format_func=lambda m: MESES[m-1],
+            key=f"meses_{kr['id']}"
+        )
+
+        nuevas_metas = {}
+        if meses_sel:
+            cols_metas = st.columns(len(meses_sel))
+            for i, mes in enumerate(sorted(meses_sel)):
+                with cols_metas[i]:
+                    val = metas_existentes.get(mes, 0.0)
+                    nuevas_metas[mes] = st.number_input(
+                        MESES[mes-1],
+                        value=float(val),
+                        key=f"meta_prog_{kr['id']}_{mes}"
+                    )
+
+        if st.button("Guardar metas progresivas", key=f"save_prog_{kr['id']}"):
+            supabase.table("kr_metas_progresivas").delete().eq("kr_id", kr["id"]).eq("year", 2026).execute()
+            for mes, meta_val in nuevas_metas.items():
+                supabase.table("kr_metas_progresivas").insert({
+                    "kr_id": kr["id"],
+                    "year": 2026,
+                    "month": mes,
+                    "meta_mes": meta_val
+                }).execute()
+            st.success("Metas progresivas guardadas.")
             st.rerun()
