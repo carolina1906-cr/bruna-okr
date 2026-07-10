@@ -7,7 +7,7 @@ check_login()
 
 st.set_page_config(page_title="Editar KRs", layout="wide")
 st.title("Editar KRs")
-st.caption("Cada lider puede actualizar la redaccion, linea base y meta de sus KRs.")
+st.caption("Cada lider puede actualizar la redaccion, linea base, meta y direccion de sus KRs.")
 
 supabase = get_supabase()
 username = st.session_state.get("username")
@@ -15,13 +15,16 @@ departments = get_departments()
 
 ADMIN_USERS = ("culloa", "abrunadobles")
 
-# Determinar que areas puede editar el usuario
-dept_map = {d["code"]: d for d in departments}
+DELTA_OPCIONES = [
+    "Aumentar", "Expandir", "Elevar", "Lograr", "Impulsar",
+    "Automatizar", "Superar", "Mantener/elevar",
+    "Reducir", "Disminuir",
+    "Completar", "Construir", "Crear"
+]
 
 if username in ADMIN_USERS:
     areas_editables = [d["code"] for d in departments]
 else:
-    # Buscar el area del usuario en Supabase
     user_result = supabase.table("users").select("area").eq("username", username).execute()
     if not user_result.data:
         st.error("No se encontro su area asignada.")
@@ -54,12 +57,18 @@ st.divider()
 
 for kr in all_krs:
     with st.expander(f"{kr['name']}"):
-        col1, col2, col3 = st.columns([3, 1, 1])
+        col1, col2 = st.columns([3, 1])
         with col1:
             nuevo_nombre = st.text_input("Nombre del KR:", value=kr["name"], key=f"nombre_{kr['id']}")
         with col2:
-            nueva_base = st.number_input("Linea base:", value=float(kr["base"] or 0), key=f"base_{kr['id']}")
+            delta_index = DELTA_OPCIONES.index(kr["delta"]) if kr["delta"] in DELTA_OPCIONES else 0
+            nuevo_delta = st.selectbox("Direccion:", options=DELTA_OPCIONES,
+                                       index=delta_index, key=f"delta_{kr['id']}")
+
+        col3, col4 = st.columns(2)
         with col3:
+            nueva_base = st.number_input("Linea base:", value=float(kr["base"] or 0), key=f"base_{kr['id']}")
+        with col4:
             nueva_meta = st.number_input("Meta:", value=float(kr["goal"] or 0), key=f"meta_{kr['id']}")
 
         if st.button("Guardar cambios", key=f"save_{kr['id']}"):
@@ -67,6 +76,7 @@ for kr in all_krs:
                 "name": nuevo_nombre,
                 "base": nueva_base,
                 "goal": nueva_meta,
+                "delta": nuevo_delta,
             }).eq("id", kr["id"]).execute()
             st.success("KR actualizado correctamente.")
             st.cache_data.clear()

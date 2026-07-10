@@ -20,7 +20,7 @@ with st.expander("Como se calcula el avance acumulado?"):
 | **Fechas fijas** | Ultimo valor medido disponible vs meta |
 | **Completado / No** | 1 = 100%, 0 = 0% |
 
-> **Importante:** Para KRs de tipo mensual puntual, el % se calcula solo sobre los meses que tienen dato registrado. 
+> **Importante:** Para KRs de tipo mensual puntual, el % se calcula solo sobre los meses que tienen dato registrado.
 > Si hay meses sin registro, el sistema lo indica para que pueda evaluar si el resultado es representativo.
 """)
 
@@ -162,9 +162,11 @@ for tab, dept in zip(tabs, departments):
             if kr["measurement_type"] == "mensual_puntual" and meses_faltantes > 0:
                 alerta_datos = f'<div style="font-size:11px;color:#BA7517;margin-top:4px;">⚠️ {meses_con_dato} de {total_meses} meses registrados ({", ".join(meses_registrados)}). Faltan {meses_faltantes} meses.</div>'
 
+            delta_badge = f'<span style="font-size:10px;background:#e8eaf6;color:#1A2744;padding:1px 6px;border-radius:4px;font-weight:600;margin-right:6px;">{kr["delta"]}</span>'
+
             st.markdown(f"""
             <div style="border-left: 4px solid {color}; padding: 10px 14px; margin-bottom: 8px; background: #f8f9fa; border-radius: 0 8px 8px 0;">
-                <div style="font-size:14px; font-weight:600; color:#1A2744; margin-bottom:4px;">{kr['name']}</div>
+                <div style="font-size:14px; font-weight:600; color:#1A2744; margin-bottom:4px;">{delta_badge}{kr['name']}</div>
                 <div style="font-size:12px; color:#888;">Meta: {kr['goal']} {kr['unit']} | Base: {kr['base']} | Ene - {MESES[mes_hasta-1]}</div>
                 <div style="font-size:22px; font-weight:700; color:{color}; margin-top:4px;">{pct_txt} <span style="font-size:12px; font-weight:400; color:{color};">({estado_txt})</span></div>
                 {alerta_datos}

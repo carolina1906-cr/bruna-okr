@@ -56,13 +56,8 @@ if dept.get("objective"):
 
 st.subheader(f"KRs - {dept_names[selected]} - {MESES[mes_activo-1]} {year_activo}")
 
-def delta_arrow(delta):
-    if delta in ['Aumentar','Expandir','Elevar','Lograr','Impulsar','Automatizar','Superar','Mantener/elevar']:
-        return '&#8593;'
-    elif delta in ['Reducir','Disminuir']:
-        return '&#8595;'
-    else:
-        return '&#10003;'
+def delta_label(delta):
+    return f'<span style="font-size:10px;background:#e8eaf6;color:#1A2744;padding:1px 6px;border-radius:4px;font-weight:600;">{delta}</span>'
 
 with st.form("ingreso_form"):
     nuevos_valores = {}
@@ -73,24 +68,3 @@ with st.form("ingreso_form"):
         estado = semaforo(pct_m)
         col1, col2, col3 = st.columns([3, 1, 1])
         with col1:
-            arrow = delta_arrow(kr["delta"])
-            st.markdown(f"{arrow} **{kr['name']}** | ({kr['unit']}) | Meta: {kr['goal']} | Base: {kr['base']}", unsafe_allow_html=True)
-            st.markdown(badge(estado), unsafe_allow_html=True)
-        with col2:
-            nuevo = st.number_input(
-                f"Valor {MESES[mes_activo-1]}",
-                value=float(val_actual) if val_actual is not None else 0.0,
-                key=f"kr_{kr['id']}"
-            )
-            nuevos_valores[kr["id"]] = nuevo
-        with col3:
-            pct_txt = f"{pct_m:.1f}%" if pct_m is not None else "-"
-            st.metric("Avance", pct_txt)
-        st.divider()
-    submitted = st.form_submit_button("Guardar datos del mes")
-    if submitted:
-        for kr_id, valor in nuevos_valores.items():
-            upsert_monthly_value(kr_id, year_activo, mes_activo, valor)
-        st.success(f"Datos de {MESES[mes_activo-1]} {year_activo} guardados correctamente.")
-        st.cache_data.clear()
-        st.rerun()
