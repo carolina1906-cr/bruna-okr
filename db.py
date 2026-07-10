@@ -20,6 +20,13 @@ def get_monthly_values(key_result_id, year):
     res = sb.table("monthly_values").select("*").eq("key_result_id", key_result_id).eq("year", year).execute()
     return {row["month"]: row["value"] for row in res.data}
 
+def get_meta_progresiva(kr_id, year, month):
+    sb = get_supabase()
+    res = sb.table("kr_metas_progresivas").select("meta_mes").eq("kr_id", kr_id).eq("year", year).eq("month", month).execute()
+    if res.data:
+        return res.data[0]["meta_mes"]
+    return None
+
 def upsert_monthly_value(key_result_id, year, month, value, notes=""):
     sb = get_supabase()
     sb.table("monthly_values").upsert({

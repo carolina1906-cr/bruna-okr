@@ -1,6 +1,6 @@
 import streamlit as st
 from auth import check_login
-from db import get_departments, get_key_results, get_monthly_values, get_setting, set_setting
+from db import get_departments, get_key_results, get_monthly_values, get_setting, set_setting, get_meta_progresiva
 from calculations import calcular_avance, semaforo
 from constants import MESES
 
@@ -103,7 +103,8 @@ for dept in departments:
     kr_list = []
     for kr in krs:
         vals = get_monthly_values(kr["id"], year_activo)
-        pct_m, pct_a = calcular_avance(kr, vals, mes_activo)
+        meta_prog = get_meta_progresiva(kr["id"], year_activo, mes_activo)
+        pct_m, pct_a = calcular_avance(kr, vals, mes_activo, meta_progresiva=meta_prog)
         pct_show = pct_a if usar_acum and pct_a is not None else pct_m
         estado = semaforo(pct_show)
         total += 1
@@ -113,7 +114,7 @@ for dept in departments:
         else: sin_dato += 1
         if pct_show is not None:
             dept_pcts.append(pct_show)
-        kr_list.append((kr, pct_m, pct_a, pct_show, estado))
+        kr_list.append((kr, pct_m, pct_a, pct_show, estado, meta_prog))
     prom = round(sum(dept_pcts) / len(dept_pcts), 1) if dept_pcts else None
     dept_promedios.append(prom if prom is not None else 0)
     dept_data.append((dept, prom, kr_list))
@@ -142,16 +143,17 @@ if st.session_state.dept_selected:
         dept, prom, kr_list = selected
         st.markdown(f'<div class="section-title">{dept["name"]}</div>', unsafe_allow_html=True)
         st.markdown(f'<div class="dept-obj">{dept.get("objective","")}</div>', unsafe_allow_html=True)
-        for kr, pct_m, pct_a, pct_show, estado in kr_list:
+        for kr, pct_m, pct_a, pct_show, estado, meta_prog in kr_list:
             color_class = COLOR_MAP.get(estado, "gris")
             pct_color = PCT_COLOR.get(estado, "#999")
             pct_txt = f"{pct_show:.1f}%" if pct_show is not None else "Sin dato"
             acum_txt = f"Acum: {pct_a:.1f}%" if pct_a is not None else ""
+            meta_txt = f"Meta mes: {meta_prog}%" if meta_prog is not None else f"Meta: {kr['goal']} {kr['unit']}"
             badge = delta_label(kr["delta"])
             st.markdown(f"""
             <div class="kr-card {color_class}">
                 <div class="kr-name">{badge} {kr['name']}</div>
-                <div class="kr-meta">Meta: {kr['goal']} {kr['unit']} | Base: {kr['base']} {f'| {acum_txt}' if acum_txt else ''}</div>
+                <div class="kr-meta">{meta_txt} | Base: {kr['base']} {f'| {acum_txt}' if acum_txt else ''}</div>
                 <div class="kr-pct" style="color:{pct_color};">{pct_txt}</div>
             </div>
             """, unsafe_allow_html=True)
