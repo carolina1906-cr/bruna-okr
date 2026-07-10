@@ -68,3 +68,24 @@ with st.form("ingreso_form"):
         estado = semaforo(pct_m)
         col1, col2, col3 = st.columns([3, 1, 1])
         with col1:
+            badge_delta = delta_label(kr["delta"])
+            st.markdown(f"{badge_delta} **{kr['name']}** | ({kr['unit']}) | Meta: {kr['goal']} | Base: {kr['base']}", unsafe_allow_html=True)
+            st.markdown(badge(estado), unsafe_allow_html=True)
+        with col2:
+            nuevo = st.number_input(
+                f"Valor {MESES[mes_activo-1]}",
+                value=float(val_actual) if val_actual is not None else 0.0,
+                key=f"kr_{kr['id']}"
+            )
+            nuevos_valores[kr["id"]] = nuevo
+        with col3:
+            pct_txt = f"{pct_m:.1f}%" if pct_m is not None else "-"
+            st.metric("Avance", pct_txt)
+        st.divider()
+    submitted = st.form_submit_button("Guardar datos del mes")
+    if submitted:
+        for kr_id, valor in nuevos_valores.items():
+            upsert_monthly_value(kr_id, year_activo, mes_activo, valor)
+        st.success(f"Datos de {MESES[mes_activo-1]} {year_activo} guardados correctamente.")
+        st.cache_data.clear()
+        st.rerun()
